@@ -85,34 +85,15 @@ public class GitLabPipelineStatusNotifier {
     }
 
     private static String getStatusName(final GitLabSCMSourceContext sourceContext, final Run<?, ?> build, final SCMRevision revision) {
-        return getStatusName(sourceContext, build.getFullDisplayName(), revision);
+        return getStatusName(sourceContext, build.getParent().getDisplayName(), revision);
     }
 
     private static String getStatusName(final GitLabSCMSourceContext sourceContext, final Job<?, ?> job, final SCMRevision revision) {
-        return getStatusName(sourceContext, job.getFullDisplayName(), revision);
+        return getStatusName(sourceContext, job.getDisplayName(), revision);
     }
 
-    static String getStatusName(final GitLabSCMSourceContext sourceContext, final String fullDisplayName, final SCMRevision revision) {
-        final String type;
-        if (revision instanceof BranchSCMRevision) {
-            type = "branch";
-        } else if (revision instanceof MergeRequestSCMRevision) {
-            type = getMrBuildName(fullDisplayName);
-        } else if (revision instanceof GitTagSCMRevision) {
-            type = "tag";
-        } else {
-            type = "UNKNOWN";
-            LOGGER.log(Level.WARNING, () -> "Unknown SCMRevision implementation "
-                + revision.getClass().getName() + ", append" + type + " to status name");
-        }
-
-        String customPrefix = sourceContext.getBuildStatusNameCustomPart();
-        if (!customPrefix.isEmpty())
-        {
-            customPrefix = customPrefix + GITLAB_PIPELINE_STATUS_DELIMITER;
-        }
-
-        final String statusName = GITLAB_PIPELINE_STATUS_PREFIX + GITLAB_PIPELINE_STATUS_DELIMITER + customPrefix + type;
+    static String getStatusName(final GitLabSCMSourceContext sourceContext, final String displayName, final SCMRevision revision) {
+        final String statusName = displayName;
         LOGGER.log(Level.FINEST, () -> "Retrieved status name is: " + statusName);
         return statusName;
     }
