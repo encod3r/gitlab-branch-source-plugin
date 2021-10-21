@@ -319,21 +319,14 @@ public class GitLabSCMSource extends AbstractGitSCMSource {
                     request.setBranches(gitLabApi.getRepositoryApi().getBranches(gitlabProject));
                 }
                 if (request.isFetchMRs()) {
-                    // If not authenticated GitLabApi cannot detect if it is a fork
-                    // If `forkedFromProject` is null it doesn't mean anything
-                    if (gitlabProject.getForkedFromProject() == null) {
-                        listener.getLogger()
-                            .format(
-                                "%nUnable to detect if it is a mirror or not still fetching MRs anyway...%n");
-                        List<MergeRequest> mrs = gitLabApi.getMergeRequestApi()
-                            .getMergeRequests(gitlabProject, Constants.MergeRequestState.OPENED);
-                        mrs = mrs.stream().filter(mr -> mr.getSourceProjectId() != null)
-                            .collect(Collectors.toList());
-                        request.setMergeRequests(mrs);
-                    } else {
-                        listener.getLogger()
-                            .format("%nIgnoring merge requests as project is a mirror...%n");
-                    }
+                    listener.getLogger()
+                        .format(
+                            "%nFetching MRs...%n");
+                    List<MergeRequest> mrs = gitLabApi.getMergeRequestApi()
+                        .getMergeRequests(gitlabProject, Constants.MergeRequestState.OPENED);
+                    mrs = mrs.stream().filter(mr -> mr.getSourceProjectId() != null)
+                        .collect(Collectors.toList());
+                    request.setMergeRequests(mrs);
                 }
                 if (request.isFetchTags()) {
                     request.setTags(gitLabApi.getTagsApi().getTags(gitlabProject));
