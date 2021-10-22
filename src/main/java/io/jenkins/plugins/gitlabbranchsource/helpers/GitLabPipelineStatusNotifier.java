@@ -93,7 +93,12 @@ public class GitLabPipelineStatusNotifier {
     }
 
     static String getStatusName(final GitLabSCMSourceContext sourceContext, final String displayName, final SCMRevision revision) {
-        final String statusName = displayName;
+        String customPrefix = sourceContext.getBuildStatusNameCustomPart();        
+        if (!customPrefix.isEmpty())
+        {
+            customPrefix = customPrefix + GITLAB_PIPELINE_STATUS_DELIMITER;
+        }
+        final String statusName = customPrefix + displayName;
         LOGGER.log(Level.FINEST, () -> "Retrieved status name is: " + statusName);
         return statusName;
     }
