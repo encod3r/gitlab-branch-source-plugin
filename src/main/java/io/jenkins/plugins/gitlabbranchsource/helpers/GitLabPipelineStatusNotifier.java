@@ -93,7 +93,7 @@ public class GitLabPipelineStatusNotifier {
     }
 
     static String getStatusName(final GitLabSCMSourceContext sourceContext, final String displayName, final SCMRevision revision) {
-        String customPrefix = sourceContext.getBuildStatusNameCustomPart();        
+        String customPrefix = sourceContext.getBuildStatusNameCustomPart();
         if (!customPrefix.isEmpty())
         {
             customPrefix = customPrefix + GITLAB_PIPELINE_STATUS_DELIMITER;
