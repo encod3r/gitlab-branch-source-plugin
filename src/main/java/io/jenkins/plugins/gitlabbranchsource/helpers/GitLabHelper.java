@@ -25,10 +25,16 @@ public class GitLabHelper {
         if (server != null) {
             PersonalAccessToken credentials = server.getCredentials(context);
             String serverUrl = server.getServerUrl();
+            GitLabApi gitlabApi;
+            Integer connectTimeout = 300000; // 5min
+            Integer readTimeout = 1200000; // 20min
             if (credentials != null) {
-                return new GitLabApi(serverUrl, credentials.getToken().getPlainText(), null, getProxyConfig(serverUrl));
+                gitlabApi = new GitLabApi(serverUrl, credentials.getToken().getPlainText(), null, getProxyConfig(serverUrl));
+            } else {
+                gitlabApi = new GitLabApi(serverUrl, GitLabServer.EMPTY_TOKEN, null, getProxyConfig(serverUrl));
             }
-            return new GitLabApi(serverUrl, GitLabServer.EMPTY_TOKEN, null, getProxyConfig(serverUrl));
+            gitlabApi.setRequestTimeout(connectTimeout, readTimeout);
+            return gitlabApi;
         }
         throw new IllegalStateException(
             String.format("No server found with the name: %s", serverName));
