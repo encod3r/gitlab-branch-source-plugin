@@ -421,63 +421,68 @@ public class GitLabSCMSource extends AbstractGitSCMSource {
                         }
                         LOGGER.log(Level.FINE, String.format("%s -> %s", originOwner, (request.isMember(originOwner) ? "Trusted"
                             : "Untrusted")));
-                        for (ChangeRequestCheckoutStrategy strategy : strategies.get(fork)) {
-                            if (request.process(new MergeRequestSCMHead(
-                                    "MR-" + mr.getIid() + (strategies.get(fork).size() > 1 ? "-" + strategy.name()
-                                        .toLowerCase(Locale.ENGLISH) : ""),
-                                    mr.getIid(),
-                                    new BranchSCMHead(mr.getTargetBranch()),
-                                    strategy,
-                                    fork
-                                        ? new SCMHeadOrigin.Fork(originProjectPath)
-                                        : SCMHeadOrigin.DEFAULT,
-                                    originOwner,
-                                    originProjectPath,
-                                    mr.getSourceBranch(),
-                                    mr.getTitle()
-                                ),
-                                (SCMSourceRequest.RevisionLambda<MergeRequestSCMHead, MergeRequestSCMRevision>) head ->
-                                    new MergeRequestSCMRevision(
-                                        head,
-                                        new BranchSCMRevision(
-                                            head.getTarget(),
-                                            targetSha // Latest revision of target branch
-                                        ),
-                                        new BranchSCMRevision(
-                                            new BranchSCMHead(head.getOriginName()),
-                                            mr.getSha()
-                                        )
+                        if ( !mr.getTitle().toLowerCase().matches("draft:.*") ){
+                            for (ChangeRequestCheckoutStrategy strategy : strategies.get(fork)) {
+                                if (request.process(new MergeRequestSCMHead(
+                                        "MR-" + mr.getIid() + (strategies.get(fork).size() > 1 ? "-" + strategy.name()
+                                            .toLowerCase(Locale.ENGLISH) : ""),
+                                        mr.getIid(),
+                                        new BranchSCMHead(mr.getTargetBranch()),
+                                        strategy,
+                                        fork
+                                            ? new SCMHeadOrigin.Fork(originProjectPath)
+                                            : SCMHeadOrigin.DEFAULT,
+                                        originOwner,
+                                        originProjectPath,
+                                        mr.getSourceBranch(),
+                                        mr.getTitle()
                                     ),
-                                new SCMSourceRequest.ProbeLambda<MergeRequestSCMHead, MergeRequestSCMRevision>() {
-                                    @NonNull
-                                    @Override
-                                    public SCMSourceCriteria.Probe create(
-                                        @NonNull MergeRequestSCMHead head,
-                                        @Nullable MergeRequestSCMRevision revision)
-                                        throws IOException, InterruptedException {
-                                        boolean isTrusted = request.isTrusted(head);
-                                        if (!isTrusted) {
-                                            listener.getLogger()
-                                                .format("(not from a trusted source)%n");
+                                    (SCMSourceRequest.RevisionLambda<MergeRequestSCMHead, MergeRequestSCMRevision>) head ->
+                                        new MergeRequestSCMRevision(
+                                            head,
+                                            new BranchSCMRevision(
+                                                head.getTarget(),
+                                                targetSha // Latest revision of target branch
+                                            ),
+                                            new BranchSCMRevision(
+                                                new BranchSCMHead(head.getOriginName()),
+                                                mr.getSha()
+                                            )
+                                        ),
+                                    new SCMSourceRequest.ProbeLambda<MergeRequestSCMHead, MergeRequestSCMRevision>() {
+                                        @NonNull
+                                        @Override
+                                        public SCMSourceCriteria.Probe create(
+                                            @NonNull MergeRequestSCMHead head,
+                                            @Nullable MergeRequestSCMRevision revision)
+                                            throws IOException, InterruptedException {
+                                            boolean isTrusted = request.isTrusted(head);
+                                            if (!isTrusted) {
+                                                listener.getLogger()
+                                                    .format("(not from a trusted source)%n");
+                                            }
+                                            return createProbe(isTrusted ? head : head.getTarget(),
+                                                revision);
                                         }
-                                        return createProbe(isTrusted ? head : head.getTarget(),
-                                            revision);
+                                    },
+                                    (SCMSourceRequest.Witness) (head, revision, isMatch) -> {
+                                        if (isMatch) {
+                                            listener.getLogger().format("Met criteria%n");
+                                        } else {
+                                            listener.getLogger().format("Does not meet criteria%n");
+                                        }
                                     }
-                                },
-                                (SCMSourceRequest.Witness) (head, revision, isMatch) -> {
-                                    if (isMatch) {
-                                        listener.getLogger().format("Met criteria%n");
-                                    } else {
-                                        listener.getLogger().format("Does not meet criteria%n");
-                                    }
+                                )) {
+                                    listener.getLogger()
+                                        .format(
+                                            "%n%d merge requests were processed (query completed)%n",
+                                            count);
+                                    return;
                                 }
-                            )) {
-                                listener.getLogger()
-                                    .format(
-                                        "%n%d merge requests were processed (query completed)%n",
-                                        count);
-                                return;
                             }
+                        } else {
+                            listener.getLogger().format("MR is Draft%n");
+                            listener.getLogger().format("Does not meet criteria%n");
                         }
                     }
                     listener.getLogger().format("%n%d merge requests were processed%n", count);
